@@ -1,0 +1,18 @@
+{
+    "identity": {
+        "club": {
+            "name": "Club Name",
+            "members": [
+                {
+                    "family": "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+                    "attainability": 85,
+                    "role": "Member Role",
+                    "location": "Member Location",
+                    "ping": 20,
+                    "uptime": 3600,
+                    "uptime_average": 7200
+                }
+            ]
+        }
+    }
+}
