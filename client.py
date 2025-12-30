@@ -6,7 +6,7 @@ import types
 sel = selectors.DefaultSelector()
 message = [b"Message 1 from client.", b"Message 2 from client."]
 
-def runClient(host, port, num_conns):
+def request(host, port):
     server_addr = (host, port)
 
     print(f'Starting connection to {server_addr}')
@@ -58,5 +58,3 @@ def service_connection(key, mask):
             sent = sock.send(data.outb)
             data.outb = data.outb[sent:]
     
-
-runClient('localhost', 8000, 1)

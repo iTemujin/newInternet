@@ -1,31 +1,34 @@
+import sys
+import findtag
 import client
 
-def readDataBase():
-
-    return None
 
 class Identity():
-    def __init__(self):
-        self.family = "" # Ipv6
-        self.familiar = {} # Kit ismerek
+    def __init__(self, ip):
+        self.family = ip # Ipv6
         self.club = {} # Melyik klubban vagyok tag
-        self.location = "" # Hova tartozom
+        self.location = "" # Hova tartozik
 
-        self.role = "", # Milyen szerepem van / volt
-        self.uptime = 0 # Mennyi ideje vagyok fent
-        self.history = [] # Miket utasitottam már el
+        tags = findtag.find_server()
+        if tags is None:
+            self.club = 'Obj1'
+        else:
+            data = client.request(tags, 8080)
+            self.club[data['club']] = Club()
+            print('Club megadva:', self.club)
+
+    def set_family(self, new_family):
+        self.family = new_family
+    
+    def get_family(self):
+        return self.family
 
 class Familiar():
     def __init__(self):
         self.family = "" # Ipv6
-        self.attainability = 0 # Elérhetőség 0-100%
         self.club = [] # Melyik klubok tagja
-        self.role = "", # Milyen szerepe van / volt
         self.location = "" # Hova tartozik
 
-        self.ping = 0 # Utolsó ping idő atlaga
-        self.uptime = 0 # Mennyi ideje van fent
-        self.uptime_average = 0 # Átlagos uptime
 
 class Club():
     def __init__(self):
@@ -36,10 +39,6 @@ class Club():
 class Member():
     def __init__(self):
         self.family = "" # Ipv6
-        self.attainability = 0 # Elérhetőség 0-100%
-        self.club = "" # Melyik klubok tagja
-        self.role = "" # Milyen szerepe van / volt
+        self.club = [] # Melyik klubok tagja
+        self.location = "" # Hova tartozik
 
-        self.ping = 0 # Utolsó ping idő atlaga
-        self.uptime = 0 # Mennyi ideje van fent
-        self.uptime_average = 0 # Átlagos uptime

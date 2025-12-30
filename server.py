@@ -2,53 +2,78 @@ import socket
 import selectors
 import types
 
+import time
+
 sel = selectors.DefaultSelector()
 
-def runServer(HOST, PORT):
-    lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    lsock.bind((HOST, PORT))
-    lsock.listen()
-    print(f'Server listening on {(HOST, PORT)}')
-    lsock.setblocking(False)
-    sel.register(lsock, selectors.EVENT_READ, data=None)
 
-    try:
+class Server():
+    def __init__(self, posta, identity_posta):
+        lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        PORT = 8080
+        lsock.bind(('', PORT))
+        lsock.listen()
+
+        self.posta = posta
+
+        self.local_ip = lsock.getsockname()
+        self.posta.put(f'{self.local_ip[0]}:{self.local_ip[1]}')
+
+        self.identity = identity_posta.get()
+
+        lsock.setblocking(False)
+        sel.register(lsock, selectors.EVENT_READ, data=None)
+
+    def _run_tagHere(self):
+        print('szia')
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        sock.bind(('', 5005))
+
         while True:
-            events = sel.select(timeout=None)
-            for key, mask in events:
-                if key.data is None:
-                    accept_wrapper(key.fileobj)
-                else:
-                    service_connection(key, mask)
-    except KeyboardInterrupt:
-        print("Caught keyboard interrupt, exiting")
-    finally:
-        sel.close()
+            data, addr = sock.recvfrom(1024)
+            if data == b"DISCOVER_SERVER":
+                # Válaszolunk, hogy itt vagyunk
+                sock.sendto(b"SERVER_HERE", addr)
 
-def accept_wrapper(sock):
-    conn, addr = sock.accept()
-    print(f'Accepted connection from {addr}')
-    conn.setblocking(False)
-    data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
-    events = selectors.EVENT_READ | selectors.EVENT_WRITE
-    sel.register(conn, events, data=data)
+    def run(self):
+        print(f'[{self.identity.get_family()}] Server...')
+        try:
+            while True:
+                events = sel.select(timeout=None)
+                for key, mask in events:
+                    if key.data is None:
+                        self.accept_wrapper(key.fileobj)
+                    else:
+                        self.service_connection(key, mask)
+        except KeyboardInterrupt:
+            print("Caught keyboard interrupt, exiting")
+        finally:
+            sel.close()
 
-def service_connection(key, mask):
-    sock = key.fileobj
-    data = key.data
-    if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(1024)
+    def accept_wrapper(self, sock):
+        conn, addr = sock.accept()
+        print(f'Accepted connection from {addr}')
+        conn.setblocking(False)
+        data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
+        events = selectors.EVENT_READ | selectors.EVENT_WRITE
+        sel.register(conn, events, data=data)
 
-        if recv_data:
-            data.outb += recv_data
-        else:
-            print("Closing connection to", data.addr)
-            sel.unregister(sock)
-            sock.close()
-    if mask & selectors.EVENT_WRITE:
-        if data.outb:
-            print(f'Sending {data.outb!r} to {data.addr}')
-            sent = sock.send(data.outb)
-            data.outb = data.outb[sent:]
+    def service_connection(self, key, mask):
+        sock = key.fileobj
+        data = key.data
+        if mask & selectors.EVENT_READ:
+            recv_data = sock.recv(1024)
 
-runServer('localhost', 8000)
+            if recv_data:
+                data.outb += recv_data
+            else:
+                print("Closing connection to", data.addr)
+                sel.unregister(sock)
+                sock.close()
+        if mask & selectors.EVENT_WRITE:
+            if data.outb:
+                print(f'Sending {data.outb!r} to {data.addr}')
+                sent = sock.send(data.outb)
+                data.outb = data.outb[sent:]
