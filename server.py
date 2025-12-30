@@ -72,11 +72,15 @@ class Server():
                     line, data.recv_buf = data.recv_buf.split(b'\n', 1)
                     try:
                         message = json.loads(line.decode("utf-8"))
-                        if message['request'] == 'can i join':
-                            # Egyszerű válasz: küldjünk vissza egy JSON-t, pl. a klub nevét
-                            response = json.dumps({'request': 'yes', 'clubName':'Obj2'}).encode('utf-8') + b'\n'
-                        
-                        data.outb += response
+                        req = message.get('request')
+                        if req == 'can i join':
+                            response = json.dumps({'request': 'yes', 'clubName': 'Obj2'}).encode('utf-8') + b'\n'
+                            data.outb += response
+                        elif req == 'get_club':
+                            response = json.dumps({'club': 'Obj1'}).encode('utf-8') + b'\n'
+                            data.outb += response
+                        else:
+                            print('Unknown request:', req)
                     except json.JSONDecodeError:
                         print("Valami jött, de nem JSON!")
             else:

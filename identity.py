@@ -6,20 +6,33 @@ import client
 class Identity():
     def __init__(self, ip):
         self.family = ip # Ipv6
-        self.club = {} # Melyik klubban vagyok tag
+        self.club = None # Melyik klubban vagyok tag (Club vagy None)
         self.location = "" # Hova tartozik
 
         tags = findtag.find_server()
         if tags is None:
-            self.club = 'Obj1'
-            print('Make club:', self.club)
+            # Nincs hálózati szerver, létrehozunk egy helyi klubot
+            self.club = Club('LocalClub')
+            print('No server found — created local club:', self.club.getName())
         else:
-            data = client.request(tags, 8080, {'request': 'can I join'})
-            if data is not None:
-                if data['request'] == 'yes':
-                    print('Join', data['clubName'])
-            self.club[data['club']] = Club()
-            print('Club megadva:', self.club.name())
+            # client.request visszaadja a szerver válaszát (dict) vagy None-t
+            data = client.request(tags, 8080)
+            if data is None:
+                # Nem kaptunk érvényes választ
+                self.club = Club('FallbackClub')
+                print('No valid response from server — using fallback club')
+            else:
+                # Támogatjuk többféle választ: 'request':'yes', 'clubName':..., vagy 'club': 'Name'
+                if data.get('request') == 'yes':
+                    club_name = data.get('clubName', 'JoinedClub')
+                    self.club = Club(club_name)
+                    print('Joined club:', self.club.getName())
+                elif 'club' in data:
+                    self.club = Club(data['club'])
+                    print('Club megadva:', self.club.getName())
+                else:
+                    self.club = Club('UnknownClub')
+                    print('Unexpected server response, created:', self.club.getName())
 
     def set_family(self, new_family):
         self.family = new_family
