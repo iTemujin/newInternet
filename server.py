@@ -56,7 +56,7 @@ class Server():
         conn, addr = sock.accept()
         print(f'Accepted connection from {addr}')
         conn.setblocking(False)
-        data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'')
+        data = types.SimpleNamespace(addr=addr, inb=b'', outb=b'', recv_buf=b'')
         events = selectors.EVENT_READ | selectors.EVENT_WRITE
         sel.register(conn, events, data=data)
 
@@ -64,15 +64,20 @@ class Server():
         sock = key.fileobj
         data = key.data
         if mask & selectors.EVENT_READ:
-            recv_data = sock.recv(1024)
+            recv_data = sock.recv(4096)
 
             if recv_data:
-                try:
-                    message = json.loads(recv_data.decode("utf-8"))
-                    print(message, '--------========--------')
-                    data.outb += recv_data
-                except json.JSONDecodeError:
-                    print("Valami Jott, de nem JSON!")
+                data.recv_buf += recv_data
+                while b'\n' in data.recv_buf:
+                    line, data.recv_buf = data.recv_buf.split(b'\n', 1)
+                    try:
+                        message = json.loads(line.decode("utf-8"))
+                        print(message, '--------========--------')
+                        # Egyszerű válasz: küldjünk vissza egy JSON-t, pl. a klub nevét
+                        response = json.dumps({'club': 'Obj1'}).encode('utf-8') + b'\n'
+                        data.outb += response
+                    except json.JSONDecodeError:
+                        print("Valami jött, de nem JSON!")
             else:
                 print("Closing connection to", data.addr)
                 sel.unregister(sock)
@@ -80,6 +85,5 @@ class Server():
         if mask & selectors.EVENT_WRITE:
             if data.outb:
                 print(f'Sending {data.outb!r} to {data.addr}')
-                
-                sent = sock.send(b"{}")
+                sent = sock.send(data.outb)
                 data.outb = data.outb[sent:]

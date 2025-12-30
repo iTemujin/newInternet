@@ -5,7 +5,6 @@ import types
 import json
 
 sel = selectors.DefaultSelector()
-message = [b"Message 1 from client.", b"Message 2 from client."]
 
 def request(host, port):
     server_addr = (host, port)
@@ -16,11 +15,15 @@ def request(host, port):
     sock.connect_ex(server_addr)
     events = selectors.EVENT_READ | selectors.EVENT_WRITE
     data = types.SimpleNamespace(
-        msg_total=sum(len(m) for m in message),
-        recv_total=0,
-        messages=message.copy(),
         outb=b"",
+        recv_buf=b"",
+        result=[],
     )
+
+    # Küldésre kerülő kérés (newline-delimitált JSON)
+    json_data = json.dumps({'request': 'get_club'}).encode('utf-8') + b'\n'
+    data.outb = json_data
+
     sel.register(sock, events, data=data)
 
     try:
@@ -28,7 +31,7 @@ def request(host, port):
             events = sel.select(timeout=None)
             for key, mask in events:
                 service_connection(key, mask)
-            
+
             if not sel.get_map():
                 break
 
@@ -37,27 +40,32 @@ def request(host, port):
     finally:
         sel.close()
 
+    return data.result[0] if data.result else None
+
 
 def service_connection(key, mask):
     sock = key.fileobj
     data = key.data
     if mask & selectors.EVENT_READ:
-        recv_data = sock.recv(1024)
+        recv_data = sock.recv(4096)
         if recv_data:
-            print(f"Received {recv_data!r} from connection")
-            data.recv_total += len(recv_data)
-        if not recv_data or data.recv_total == data.msg_total:
-            print(f"Closing connection {data}")
+            data.recv_buf += recv_data
+            while b'\n' in data.recv_buf:
+                line, data.recv_buf = data.recv_buf.split(b'\n', 1)
+                try:
+                    parsed = json.loads(line.decode('utf-8'))
+                    data.result.append(parsed)
+                    sel.unregister(sock)
+                    sock.close()
+                    return
+                except json.JSONDecodeError:
+                    print('Received invalid JSON from server')
+        else:
             sel.unregister(sock)
             sock.close()
-            return data
-    
+            return
+
     if mask & selectors.EVENT_WRITE:
-        if not data.outb and data.messages:
-            data.outb = data.messages.pop(0)
         if data.outb:
-            print(f'Sending {data.outb!r} to connection {data}')
-            json_data = json.dumps({'szia':'hello'}).encode("utf-8")
-            sent = sock.send(json_data)
+            sent = sock.send(data.outb)
             data.outb = data.outb[sent:]
-    
