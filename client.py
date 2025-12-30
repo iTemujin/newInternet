@@ -2,6 +2,7 @@ import sys
 import socket
 import selectors
 import types
+import json
 
 sel = selectors.DefaultSelector()
 message = [b"Message 1 from client.", b"Message 2 from client."]
@@ -49,12 +50,14 @@ def service_connection(key, mask):
             print(f"Closing connection {data}")
             sel.unregister(sock)
             sock.close()
+            return data
     
     if mask & selectors.EVENT_WRITE:
         if not data.outb and data.messages:
             data.outb = data.messages.pop(0)
         if data.outb:
             print(f'Sending {data.outb!r} to connection {data}')
-            sent = sock.send(data.outb)
+            json_data = json.dumps({'szia':'hello'}).encode("utf-8")
+            sent = sock.send(json_data)
             data.outb = data.outb[sent:]
     

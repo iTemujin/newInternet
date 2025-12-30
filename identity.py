@@ -12,6 +12,7 @@ class Identity():
         tags = findtag.find_server()
         if tags is None:
             self.club = 'Obj1'
+            print('Make club:', self.club)
         else:
             data = client.request(tags, 8080)
             self.club[data['club']] = Club()

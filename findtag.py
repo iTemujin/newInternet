@@ -23,4 +23,5 @@ def find_server(port=5005):
         sock.close()
 
 # Használat:
-server_ip = find_server()
+if __name__ == "__main__":
+    server_ip = find_server()

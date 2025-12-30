@@ -1,6 +1,7 @@
 import socket
 import selectors
 import types
+import json
 
 import time
 
@@ -25,7 +26,6 @@ class Server():
         sel.register(lsock, selectors.EVENT_READ, data=None)
 
     def _run_tagHere(self):
-        print('szia')
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -67,7 +67,12 @@ class Server():
             recv_data = sock.recv(1024)
 
             if recv_data:
-                data.outb += recv_data
+                try:
+                    message = json.loads(recv_data.decode("utf-8"))
+                    print(message, '--------========--------')
+                    data.outb += recv_data
+                except json.JSONDecodeError:
+                    print("Valami Jott, de nem JSON!")
             else:
                 print("Closing connection to", data.addr)
                 sel.unregister(sock)
@@ -75,5 +80,6 @@ class Server():
         if mask & selectors.EVENT_WRITE:
             if data.outb:
                 print(f'Sending {data.outb!r} to {data.addr}')
-                sent = sock.send(data.outb)
+                
+                sent = sock.send(b"{}")
                 data.outb = data.outb[sent:]
