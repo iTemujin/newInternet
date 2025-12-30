@@ -14,9 +14,12 @@ class Identity():
             self.club = 'Obj1'
             print('Make club:', self.club)
         else:
-            data = client.request(tags, 8080)
+            data = client.request(tags, 8080, {'request': 'can I join'})
+            if data is not None:
+                if data['request'] == 'yes':
+                    print('Join', data['clubName'])
             self.club[data['club']] = Club()
-            print('Club megadva:', self.club)
+            print('Club megadva:', self.club.name())
 
     def set_family(self, new_family):
         self.family = new_family
@@ -32,10 +35,14 @@ class Familiar():
 
 
 class Club():
-    def __init__(self):
+    def __init__(self, name):
+        self.name = name
         self.size = 0 # Tagok száma
         self.members = {} # Tagok
         self.location = '' # Hol van a klub
+    
+    def getName(self):
+        return self.name
 
 class Member():
     def __init__(self):

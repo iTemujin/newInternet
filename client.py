@@ -6,7 +6,7 @@ import json
 
 sel = selectors.DefaultSelector()
 
-def request(host, port):
+def request(host, port, messageJson):
     server_addr = (host, port)
 
     print(f'Starting connection to {server_addr}')
@@ -57,7 +57,7 @@ def service_connection(key, mask):
                     data.result.append(parsed)
                     sel.unregister(sock)
                     sock.close()
-                    return
+                    return parsed
                 except json.JSONDecodeError:
                     print('Received invalid JSON from server')
         else:

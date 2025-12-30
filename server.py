@@ -72,9 +72,10 @@ class Server():
                     line, data.recv_buf = data.recv_buf.split(b'\n', 1)
                     try:
                         message = json.loads(line.decode("utf-8"))
-                        print(message, '--------========--------')
-                        # Egyszerű válasz: küldjünk vissza egy JSON-t, pl. a klub nevét
-                        response = json.dumps({'club': 'Obj1'}).encode('utf-8') + b'\n'
+                        if message['request'] == 'can i join':
+                            # Egyszerű válasz: küldjünk vissza egy JSON-t, pl. a klub nevét
+                            response = json.dumps({'request': 'yes', 'clubName':'Obj2'}).encode('utf-8') + b'\n'
+                        
                         data.outb += response
                     except json.JSONDecodeError:
                         print("Valami jött, de nem JSON!")
