@@ -16,7 +16,7 @@ class Identity():
             print('No server found — created local club:', self.club.getName())
         else:
             # client.request visszaadja a szerver válaszát (dict) vagy None-t
-            data = client.request(tags, 8080)
+            data = client.request(tags, 8080, {'request':'can i join'})
             if data is None:
                 # Nem kaptunk érvényes választ
                 self.club = Club('FallbackClub')
